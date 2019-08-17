@@ -1,0 +1,22 @@
+SELinux策略:安全上下文值 布尔值策略 非默认端口开放
+
+
+
+
+
+安全上下文值:
+	semanage fcontext -l | less	#查看所有上下文值
+	修改上下文值:
+	chcon -R --reference=模板目录 新目录
+
+布尔值策略:
+	getsebool -a | less	#查看服务功能开关
+	修改服务开关:
+	setsebool 服务名 on/off
+
+非默认端口开放:
+	semanage port -l | grep 程序名	#查看程序的允许端口
+	添加允许端口:
+	semanage port -a -t 程序名 -p tcp 端口号
+
+

@@ -1,0 +1,48 @@
+源码包--->RPM包
+
+装包:
+	yum -y install  rpm-build
+
+生成目录结构:
+	rpmbuild -ba xxx.spec
+	#报错,在家目录下生成rpmbuild目录
+	ls rpmbuild/		#目录内容
+	BUILD  BUILDROOT  RPMS  SOURCES  SPECS  SRPMS
+
+生成RPM包:
+	将源码包放入rpmbuild/SOURCES
+
+	在rpmbuild/SPECS内写好源码编译安装步骤
+		vim /root/rpmbuild/SPECS/***.spec	#新建文件,有内容 
+			Name:			#!源码包软件名
+			Version:		#!源码包软件版本
+			Release:		# RPM包版本
+			Summary:		# 描述信息
+			#Group:		# 组名
+			License:		# 协议:GPL
+			URL:			# 网址
+			Source0:		#!源码包全名
+			#BuildRequires:	# 制作RPM的依赖关系
+			#Requires:		# 安装RPM的依赖关系
+			%description	# 详细描述信息
+			xxx xxx
+
+			%prep			# 安装前脚本,写命令
+			%post			# 安装后脚本,写命令
+			%setup -q		# 自动解压源码包,并进入目录
+			%build
+			./configure		#!执行脚本,可自选安装内容
+			make %{?_smp_mflags}
+			%install		# make && make install
+			make install DESTDIR=%{buildroot}
+			%files		#!对哪些目录打包,打包安装目录
+			%doc
+			%changelog
+
+	执行spec文件:
+		rpmbuild -ba ***.spec
+
+	在rpmbuild/RPMS下生成RPM包
+
+
+

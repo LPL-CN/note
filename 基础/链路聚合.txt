@@ -1,0 +1,14 @@
+生成虚拟网卡:虚拟网卡名(team0)
+	nmcli connection add type team con-name 配置文件名(team0) ifname 虚拟网卡名(team0) autoconnect yes config '{"runner":{"name":"activebackup"}}'
+
+添加成员:
+	nmcli connection add type team-slave con-name 配置文件名(team0-1) ifname 真正的网卡名 master 虚拟网卡名(team0) connection.autoconnect yes
+
+配置IP地址:虚拟网卡
+	nmcli connection modify team0 ipv4.method manual ipv4.addresses ip地址/24 connection.autoconnect yes
+
+查看team配置:
+	teamdctl 虚拟网卡名(team0) state
+
+删除配置文件:
+	nmcli connection delete 配置文件名(team0)/配置文件名(team0-1)

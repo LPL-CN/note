@@ -1,0 +1,122 @@
+执行脚本:
+1.添加x权限,以路径执行
+	chmod +x ***
+	./***
+	*/***
+2.用新解释器执行
+	bash ***
+3.用当前解释器执行
+	source ***
+	. ***
+
+
+
+	set		#查看所有变量
+自定义变量:
+	${变量名}xxx
+	取消变量:
+	unset 变量名
+	export 局部变量	#定义全局变量
+	export -n 局部变量	#取消全局变量效果
+环境变量:
+	env		#查看所有环境变量
+	USER:		#存放当前的用户名
+	UID:		#存放当前用户的UID
+	HOME:		#存放当前用户家目录路径
+	HOSTNAME:	#主机名
+	PWD:		#当前路径
+	SHELL:	#当前使用的解释器
+	PS1:		#一级提示符 [\u@\h \W]\$
+	PS2:		#二级提示符 >
+	PATH:		#存放执行命令程序的搜寻路径
+	#	/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin
+	RANDOM	#随机数
+位置变量:
+	$1 $2 $3 ... ...
+预定义变量:
+	$0		#脚本名
+	$$		#执行脚本时的进程ID
+	$*		#所有位置变量的值
+	$#		#所有位置变量的数量
+	$?		#返回值
+
+四则运算:
+整数:	
+	expr $a \* $b
+	$[a*b]
+	((c=a*b))
+	let c=a*b
+小数:
+	echo "scale=3;$a/$b" | bc
+
+if:
+
+if [ *** ] ; then
+	***
+elif [ *** ] ; then
+	***
+... ...
+else
+	***
+fi
+
+
+for:
+
+for ((*;*;*))
+	do
+	***
+	done
+
+for * in *,*,*...	#{n..m}  $(seq $n $m)
+	do
+	***
+	done
+
+
+while 条件
+	do
+	***
+	done
+
+
+case * in
+模式1|模式n|...        )
+	***;;
+模式2)
+	***;;
+...
+	...
+*)
+	***
+esac
+
+
+function 函数名 {
+	***
+}
+
+
+函数名() {
+	***
+}
+
+
+解释器:
+#!/bin/bash
+
+a=1
+
+if (( $2 == 0 )); then
+  echo "$a"
+elif (( $2 == 1 )); then
+  echo "$1"
+else
+  for ((i=1;i<=$2;i++))
+    do
+    ((a*=$1))
+    if (( i == $2 )); then
+        echo "$a"
+    fi
+    done
+fi

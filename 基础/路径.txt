@@ -1,0 +1,99 @@
+/boot:			#存放系统引导必须的文件,包括内核、启动装置
+
+
+/bin、/sbin:			#存放各种命令程序
+
+
+/dev:				#存放硬件设备文件
+	/dev/null
+	/dev/cdrom ---> /dev/[hd*,sd*]
+	/dev/[vd*,hd*,sd*]
+	/dev/卷组名/逻辑卷名 ---> /dev/dm-*
+
+
+/etc:				#存放Linux系统及各种程序的配置文件
+	/etc/redhat-release
+	/etc/passwd
+	/etc/shadow
+	/etc/group
+本机永久设置别名:
+	/etc/bashrc
+永久配置主机名:
+	/etc/hostname
+主机名映射文件:	#为本机做域名解析,最高优先级,匹配即停止
+	/etc/hosts
+	ip 域名1 域名2 ... ...
+DNS服务器地址:
+	/etc/resolv.conf
+	nameserver ip地址
+开机自动挂载配置文件:
+	/etc/fstab
+	设备路径   挂载点    类型        参数         备份标记   检测顺序
+	/dev/*   /*      ext4/xfs  defaults  0        0
+NFC共享文件夹配置文件:
+	/etc/exports
+	共享文件夹路径   客户机地址(权限)   客户机地址(权限)   ...
+全局变量:
+	/etc/profile
+SELinux配置:
+	/etc/selinux/config
+Yum配置文件:
+	/etc/yum.repos.d/*.repo
+		[*]
+		name=**
+		baseurl=***
+		enabled=0/1
+		gpgcheck=0/1
+NTP时间服务配置文件(chrony):
+	/etc/chrony.conf
+自动触发挂载配置文件(autofs):
+	/etc/auto.master	#主文件
+	/监视目录	/触发挂载文件(***)
+	/etc/***	#触发挂载文件
+	挂载点文件	-fstype=文件类型	:挂载设备
+httpd配置文件:
+	/etc/httpd/conf/httpd.conf	#主配置文件
+	/etc/httpd/conf.d/*.conf		#调用配置文件
+加密软件配置文件:
+	/etc/httpd/conf.d/ssl.conf
+部署网站证书/根证书:
+	/etc/pki/tls/certs/
+部署网站解密私钥:
+	/etc/pki/tls/private/
+xml配置文件(虚拟机描述文件):
+	/etc/libvirt/qemu/
+系统限制:
+	/etc/security/limits.conf
+	#用户或组    硬限制或软限制    需要限制的项目   限制的值
+
+
+/var:				#存放日志文件、邮箱目录等经常变化的文件
+ftp默认共享路径:
+	/var/ftp/
+web网页默认路径:		#默认根目录/var/www/html
+	/var/www/
+磁盘镜像文件(保存虚拟机的操作系统及文件数据)(默认位置):
+	/var/lib/libvirt/images/
+各种日志文件:
+	/var/log/*
+
+/proc:			#存放内存中的映射数据,不占用磁盘
+	/proc/meminfo
+	/proc/sys/net/ipv4/ip_forward	#只能echo重定向修改,1开启路由转发功能
+
+
+/tmp:				#存放系统运行过程中使用的一些临时文件
+
+/usr:
+存放所有的*.service文件:	#启动服务必要的文件
+	/usr/lib/systemd/system/
+
+/root:
+
+
+/home:
+
+
+~:
+用户永久设置别名:
+	~/.bashrc

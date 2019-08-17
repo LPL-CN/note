@@ -1,0 +1,66 @@
+rsync同步操作:	#只传输变化的数据
+
+rsync 选项 /源/ /目标/			#/源/ 目录下的内容   /源 目录本身
+	-n	#测试同步过程,不做实际修改
+	-a	#归档模式(-r递归-l链接-p文件权限-t时间标记-g属组-o属主-D设备文件及特殊文件)
+	-v	#显示详细操作信息
+	-z	#传输过程中启用压缩/解压
+	--delete	#删除目标文件夹内多余的文档
+
+rsync [选项] 本地目录 user@host:远程目录		#上行,本地同步到对方
+rsync [选项] user@host:远程目录 本地目录		#下行,对方同步到本地
+
+#########################################################################################
+
+实时远程同步:
+
+1.#########################
+
+通过公钥、私钥,实现ssh无密码验证:	#私钥在自己手里,公钥给别人,谁有公钥控制谁不要密码
+
+生成公钥和私钥:
+本机:
+	ssh-keygen -f /root/.ssh/id_rsa -N ''
+	ssh-keygen		#1.是否指定位置 2.是否设置密码
+#	/root/.ssh/		#默认生成位置
+	id_rsa		#私钥
+	id_rsa.pub		#公钥
+
+把本机的公钥传递给对方:
+	ssh-copy-id user@host
+
+对方:
+	/root/.ssh/authorized_keys	#公钥接收存放位置
+
+2.#########################
+
+实时监控目录:
+
+编译安装inotify-tools-3.13.tar.gz
+
+软件包:gcc make
+
+解压:
+	tar -xf inotify-tools-3.13.tar.gz -C /opt/
+
+安装步骤:
+	cd /opt/inotify-tools-3.13/	#进入目录
+	./configure				#执行脚本
+	make					#编译
+	make install			#编译安装
+
+软件使用:
+	inotifywait [选项] 监控目录
+	-m	#持续监控(捕获事件后不退出)
+	-r	#递归监控、监控子目录及其文件
+	-q	#减少屏幕输出信息(-qq 没有输出)
+	-e	#指定监控的事件类型(modify,move,create,delete,attrib)等事件类别,不写默认全部
+
+写脚本:
+	#!/bin/bash
+	while inotifywait -rqq /nsd/
+        do
+        rsync -a /nsd/ root@192.168.4.207:/test/
+        done
+
+

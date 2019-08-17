@@ -1,0 +1,13 @@
+编译安装*.tar.gz
+
+软件包:gcc make
+
+解压:
+	tar -xf ***.tar.gz -C /***
+
+安装步骤:
+	cd /***/**/				#进入目录
+	./configure				#执行脚本(根据软件不同,有不同的选项)
+	make					#编译
+	make install			#编译安装
+

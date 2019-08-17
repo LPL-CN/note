@@ -1,0 +1,290 @@
+无引号,单引号,双引号的区别(部分区别?):{
+[root@server0 shell]# echo -e a\na$a
+ana10
+[root@server0 shell]# echo -e 'a\na$a'
+a
+a$a
+[root@server0 shell]# echo -e "a\na$a"
+a
+a10
+}
+
+   *   ?   []   {}
+
+
+   >     2>    &>
+   >>   2>>   &>>
+
+
+   |
+
+
+   -e   -d   -f
+   -r   -w   -x
+
+
+   -z   -n
+
+
+   ==   !=
+
+
+   -gt   -ge   -eq   -ne   -lt   -le
+
+
+   &&
+   ||
+
+
+"\033[(1~4);(30~38);(40~48)m***\033[0m"
+	#0:系统默认设置 1:加粗 2:正常 3:斜体 4:下划线
+	#30~38:前景色 0黑 1红 2绿 3黄 4蓝 5紫 6青 7白
+	#40~48:背景色 0黑 1红 2绿 3黄 4蓝 5紫 6青 7白
+
+   `命令行`   $(命令行)
+   输出直接参与命令执行
+
+ping
+	-c	#ping的次数
+	-i	#ping的间隔时间/s
+	-W	#ping的反馈时间/s
+
+stty -echo	#屏蔽终端输出
+stty echo	#恢复终端输出
+
+man hier
+man 5 *	#5代表配置文件类型帮助信息
+
+查看网络服务参数:
+ss=netstat -antulp		#-a显示所有端口的信息 -n 数字格式显示端口号  -t 显示tcp端口  -u 显示udp端口  -l 显示服务正在监听的端口信息  -p 显示服务名
+
+永久配置ip地址:{
+nmcli connection show
+nmcli connection modify 网卡名 ipv4.method manual ipv4.addresses 'ip地址/24 网关地址' connection.autoconnect yes 
+nmcli connection up 网卡名
+}
+
+SELinux配置:{
+setenforce 1|0
+getenforce
+}
+
+设置:{
+nmtui
+}
+
+基础命令:{
+ls -a -A -l -d -h -Z
+cd
+pwd
+
+touch
+mkdir -p
+rmdir
+
+ln -s
+cp -r -p
+mv
+rm -rf
+
+echo
+
+su - 用户名
+
+ssh -X 用户名@ip
+
+scp -r /发送的文件路径 用户名@ip:/接收文件的路径
+}
+
+rsync同步操作:{	#只传输变化的数据
+rsync 选项 /源/ /目标/			#/源/ 目录下的内容   /源 目录本身
+	-n	#测试同步过程,不做实际修改
+	-a	#归档模式(-r递归-l链接-p文件权限-t时间标记-g属组-o属主-D设备文件及特殊文件)
+	-v	#显示详细操作信息
+	-z	#传输过程中启用压缩/解压
+	--delete	#删除目标文件夹内多余的文档
+rsync [选项] 本地目录 user@host:远程目录		#上行,本地同步到对方
+rsync [选项] user@host:远程目录 本地目录		#下行,对方同步到本地
+}
+
+测试DNS域名解析工具:{
+nslookup
+dig
+}
+
+查看个别设备信息命令:{
+hostnamectl set-hostname ***
+date -s
+uname -r
+hostname
+lscpu
+ifconfig
+route
+ulimit -a	#查看系统设置
+}
+
+编辑器:{
+vim
+}
+
+查看文件命令:{
+cat
+less
+head -n
+tail -n
+grep -v -i -q ^* *$
+wc -l			#统计行数
+find [目录] [条件1] [-a|-o] [条件2] ...
+-name '***'
+-type d,f,l
+-size +,- ***k,M,G
+-user ***
+-mtime +,-*
+
+find ... ... ... -exec 命令 {} 参数 \;
+                              命令 {} 参数: 完整的命令,{}代表查找结果
+sort -n -r -t : -k 2	#对输出进行排序:n数值,r降序,t指定分隔符,k指定字段
+}
+
+别名:{
+alias
+unalias
+}
+
+用户控制:{
+useradd -u -G -d -s
+usermod -u -G -d -s
+userdel -r
+passwd
+echo "新密码" | passwd --stdin 用户
+}
+
+组控制:{
+groupadd
+groupdel
+gpasswd -a -d
+}
+
+权限设置:{
+chmod [-R] 权限 目录/文件 		//r=4 w=2 x=1
+chown [-R] 用户名:组 目录/文件
+特殊权限:u+s,g+s,o+t
+}
+
+acl访问控制列表:{
+setfacl -m u:用户名:权限 目录/文件
+setfacl -m g:组名:权限 目录/文件
+setfacl -x u:用户名 目录/文件
+setfacl -x g:组名 目录/文件
+setfacl -b 目录/文件
+getfacl 目录/文件
+}
+
+cron计划任务:{
+crontab -e -l -r -u
+分  时  日  月  周
+*   *   *   *   *
+}
+
+压缩包:{
+tar -acf -zcf -jcf -Jcf /备份文件.tar.* /目标文件路径
+tar -tf /备份文件.tar.*
+tar -xf /备份文件.tar.* -C /解压目标路径
+tar -acPf /备份文件.tar.* /目标文件路径		#绝对路径压缩
+tar -xPf /备份文件.tar.*				#绝对路径解压缩
+zip /备份文件.zip /目标文件路径			#打包文件
+zip -r /备份文件.zip /目标文件夹路径		#打包目录
+unzip /备份文件.zip -d /解压目标路径
+}
+
+下载:{
+wget -O
+}
+
+装包:{
+rpm -q -ivh -e -ql
+}
+
+程序设置：｛
+systemctl restart *	//重启程序
+systemctl enable *	//开机自启
+systenctl status *	//查看程序信息
+｝
+
+yum服务:{
+createrpo /软件包路径	//生成仓库数据文件
+yum repolist		//仓库描述信息
+yum -y install
+yum info 			//软件介绍
+yum remove
+yum clean all		//清除缓存
+yum provides */路径	//寻找产生这个文件的软件包
+}
+
+挂载:{
+mount -a
+umount
+df -h -ah
+}
+
+硬盘:{
+lsblk			//识别硬盘
+blkid			//查看硬盘分区详细信息
+mkfs.etx4/xfs -f	//格式化硬盘 强制
+
+分区:
+fdisk			//分区规划
+partprobe		//刷新分区表
+
+交换分区(虚拟内存):
+mkswap		//格式化交换系统
+swapon -s -a	//启用 查看 检测
+swapoff		//停用
+
+划分物理卷(pv),卷组(vg),逻辑卷(lv):
+pv:
+pvs
+pvdispaly
+pvcreate　空闲分区
+pvremove
+
+vg:
+vgs
+vgcheang -s PE大小
+vgdisplay
+vgcreate [-s PE大小]　卷组名　空闲分区
+vgextend　卷组名　空闲分区
+vgremove
+
+lv:
+lvs
+lvdispaly
+lvcreate [-l PE个数]-L 大小 -n 名称　卷组名
+lvextend [-l PE个数]-L 大小 -n /dev/卷组名/逻辑卷名
+lvremove
+
+刷新文件系统:
+ext4设备:resize2fs
+xfs设备:xfs_growfs
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
