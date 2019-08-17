@@ -1,0 +1,95 @@
+Git版本控制软件
+	SSH协议服务器		#读写
+		git clone 用户@ip:仓库路径
+	Git协议服务器		#只读
+		git clone git://ip/仓库名
+	HTTP协议服务器	#只读
+		http://ip/git
+
+更改仓库目录权限,限制用户访问权限
+
+
+SSH协议服务器:
+
+安装Git:
+	yum -y install git
+	git --version		#查看版本号
+
+创建Git仓库:
+	mkdir /var/git				#创建目录
+	git init /var/git/project --bare 	#创建仓库
+
+
+客户端:		#本地工作区对数据进行操作,必须先进入仓库
+		git status		#查看状态
+	clone:			#克隆远程服务器上完整的git仓库到当前目录下
+		git clone 用户@ip:仓库路径
+	pull:				#下载服务器上git仓库的新内容
+		git pull
+	config:			#修改git配置
+		git config --global user.email "邮箱"
+		git config --global user.name "用户名"
+		git config --global push.default simple
+	add:				#添加修改到暂存区
+		git add .
+	commit:			#提交修改到本地仓库
+		git commit -m "注释"
+	push:				#提交修改到远程服务器
+		git push
+	log:				#查看日志
+		git log			#详细
+		git log --pretty=oneline
+		git log --oneline
+		git reflog
+	HEAD指针:			#指定还原版本
+		git reset --hard 版本号	#还原指定版本号的版本文件
+
+Git分支操作:
+	MASTER分支（MASTER是主分支，是代码的核心）。
+	DEVELOP分支（DEVELOP最新开发成果的分支）。
+	RELEASE分支（为发布新产品设置的分支）。
+	HOTFIX分支（为了修复软件BUG缺陷的分支）。
+	FEATURE分支（为开发新功能设置的分支）。
+
+分支操作:
+	git status
+	git branch -v		#查看所有分支
+	git branch 分支名		#新建分支
+	git checkout 分支名	#切换分支
+
+分支合并:
+	git checkout master	#切换回主分支
+	git merge 分支名		#合并分支到主分支
+	出现冲突,进入冲突文件手动修改
+
+
+Git协议服务器:
+	yum -y install git-daemon
+	git init --bare /var/git/仓库名
+	改配置文件:
+	vim /usr/lib/systemd/system/git@.service
+	修改仓库路径
+	systemctl start git.socket
+客户端:
+	git clone git://ip/仓库名
+
+
+HTTP协议服务器
+	yum -y install httpd gitweb
+	git init --bare /var/git/仓库名
+	改配置文件:
+	vim /etc/gitweb.conf	
+	参考第11行模板指定仓库路径
+	systemctl start httpd
+客户端:
+	http://ip/git
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,18 @@
+部署DHCP服务器:
+DHCP(动态主机配置协议)
+
+软件包:dhcp (dhcpd)
+
+修改配置文件:
+#	/etc/dhcp/dhcpd.conf
+	复制模板文件到当前文件	#vim末行模式:r 路径
+	subnet 要分配的网段 netmask 子网掩码 {
+	  range 地址池的范围(1.1.1.1 1.1.1.10);
+	  option domain-name-servers 分配的DNS服务器的地址;
+	  option routers 网关地址;
+	  default-lease-time 600;
+	  max-lease-time 7200;
+	} 
+
+重启
+开机自启

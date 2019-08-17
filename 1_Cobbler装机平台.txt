@@ -1,0 +1,56 @@
+SELinux:permissive	#否则cobbler不能启动
+
+软件:Cobbler
+	cobbler		#主程序
+	cobbler-web		#
+	pykickstart		#
+	httpd
+	dhcp
+	tftp-server
+	
+
+解压:
+	unzip /root/cobbler.zip -d /
+	cd /cobbler/
+	unzip cobbler_rpm.zip -d /opt/
+
+装包:
+	yum -y install dhcp httpd mod_ssl
+	yum -y install /opt/cobbler/*.rpm
+	rpm -q cobbler
+
+修改配置文件:
+#	/etc/cobbler/settings
+	next_server: 192.168.4.123	#设置下一个服务器还是本机
+	server: 192.168.4.123		#设置本机为cobbler服务器
+	manage_dhcp: 1			#设置cobbler管理dhcp服务
+	pxe_just_once: 1			#防止客户端重复安装操作系统
+
+修改cobbler的dhcp配置:
+#	/etc/cobbler/dhcp.template
+	:%s /192.168.1/192.168.4/g	#全文替换
+
+以绝对路径解压文件:
+	tar -xPf /cobbler/cobbler_boot.tar.gz
+
+启动服务:
+	systemctl restart cobblerd
+	systemctl restart httpd
+	systemctl restart tftp
+	systemctl restart rsyncd		#同步服务
+
+同步刷新cobbler配置:
+	cobbler sync			#检测所有配置是否正确
+	firefox https://192.168.4.123/cobbler_web
+
+###############################################################################
+
+cobbler应用:
+
+导入镜像文件:
+	cobbler import --path=/dvd --name=CentOS7
+
+cobbler导入的镜像默认位置:
+#	/var/www/cobbler/ks_mirror
+
+

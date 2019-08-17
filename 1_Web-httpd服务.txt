@@ -1,0 +1,49 @@
+Web服务:B/S架构
+
+Web服务软件:httpd (httpd)
+动态网站解析:mod_wsig
+加密支持软件:mod_ssl
+
+部署网站证书/根证书:/etc/pki/tls/certs/
+部署网站解密私钥:/etc/pki/tls/private
+
+#	/etc/httpd/conf.d/ssl.conf
+	59、60 修改至相应的设置
+	100 指定网站证书
+	107 指定解密私钥
+	122 指定网站根证书
+
+#	/etc/httpd/conf/httpd.conf	#主配置文件(基本不修改)
+#	主配置文件关键配置字段:
+	Listen:监听地址:端口(80)
+	ServerName:本站注册的DNS名称(空缺)
+	DocumentRoot:网页文件根目录(/var/www/html)
+	DirectoryIndex:起始页/首页文件名(index.html)
+
+#	/etc/httpd/conf.d/*.conf			#调用配置文件
+
+#	新建虚拟web主机配置文件(*.conf)
+	Listen 端口号
+	<VirtualHost *:端口号>
+	 ServerName DNS名称
+	 DocumentRoot 站点网页根目录
+	 WSGIScriptAlias / 实际访问点		#根据不同的动态页面不同
+	</VirtualHost>
+
+#	Web访问控制:针对存放网站的目录,默认继承(新建文件*.conf)		#需要修改selinux策略
+	<Directory "路径">
+	 Require all denied|granted		#Require ip 网段/地址
+	</Directory>
+
+重启
+开机自启
+
+
+虚拟Web主机:一台服务器提供多个不同的站点
+基于域名的虚拟主机:
+
+基于端口的虚拟主机:
+
+基于IP地址的虚拟主机:
+
+

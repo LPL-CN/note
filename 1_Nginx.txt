@@ -1,0 +1,130 @@
+Nginx
+
+yum -y install httpd-tools				#安装工具
+htpasswd -c /usr/local/nginx/pass tom		#创建验证用户文件,-c创建
+
+ngx_stream_core_module模块
+	--with-stream			#开启四层反向代理模块
+	--with-http_ssl_module		#开启SSL加密功能
+	--with-http_stub_status_module	#开启查看监听端口状态
+
+安装:
+	yum -y install gcc pcre-devel openssl-devel	#安装依赖包
+	useradd -s /sbin/nologin nginx				#创建运行程序的用户
+	./configure   \
+	> --prefix=/usr/local/nginx   \			#指定安装路径
+	> --user=nginx   \					#指定用户,不指定默认使用nobody用户
+	> --group=nginx  \					#指定组
+	--with-stream				#开启四层反向代理模块
+	--with-http_ssl_module			#开启SSL加密功能
+	--with-http_stub_status_module		#开启查看监听端口状态
+	make && make install					#编译,安装
+
+	/usr/local/nginx/sbin/nginx				#启动服务
+	/usr/local/nginx/sbin/nginx -s stop			#关闭服务
+	/usr/local/nginx/sbin/nginx -s reload		#重新加载配置文件
+	/usr/local/nginx/sbin/nginx -V				#查看软件信息
+	ln -s /usr/local/nginx/sbin/nginx /sbin/		#制作软连接,方便后期使用
+
+查看:
+	netstat命令可以查看系统中启动的端口信息，该命令常用选项如下：
+		-a显示所有端口的信息
+		-n以数字格式显示端口号
+		-t显示TCP连接的端口
+		-u显示UDP连接的端口
+		-l显示服务正在监听的端口信息，如httpd启动后，会一直监听80端口
+		-p显示监听端口的服务名称是什么（也就是程序名称）
+
+升级:
+	执行脚本,编译,不进行安装				#老版本不删除,改个名字作为区分,以防升级出错
+	mv objs/nginx /usr/local/nginx/sbin/		#将目录内objs下的程序覆盖到程序位置
+	make upgrade					#结束旧版本的服务,启动新版本
+
+./sbin:		#存放程序
+
+./conf:		#存放配置文件
+	./conf/nginx.conf:		#主配置文件
+	worker_processes  8;				#与CPU核心数量一致
+	events {
+		worker_connections 65535;		#每个worker最大并发连接数
+	}
+
+	stream {						#TCP/UDP反向代理
+		upstream backend {			#定义服务器集群
+			server 192.168.0.1:22;		#后端SSH服务器的IP和端口
+			server 0.0.0.0:22;
+		}
+		server {
+			listen 12345;			#Nginx监听的端口
+			proxy_pass backend;		#将请求转发给backend集群
+			proxy_connect_timeout 30s;	#连接的超时时间,可选配置
+			proxy_timeout 10s;		#数据的超时时间,可选配置
+		}
+	}
+
+	http{
+		gzip on;						#开启压缩
+		gzip_min_length 1000;				#小文件不压缩
+		gzip_comp_level 4;				#压缩比率
+		gzip_types *;					#对特定文件压缩，类型参考mime.types
+
+		open_file_cache max=2000 inactive=20s;	#设置服务器最大缓存2000个文件句柄，关闭20秒内无请求的文件句柄
+		open_file_cache_valid 60s;			#文件句柄的有效时间是60秒，60秒后过期
+		open_file_cache_min_uses	5;			#只有访问次数超过5次会被缓存
+		open_file_cache_errors off;			#丢掉缓存报错,不写入日志
+
+		client_header_buffer_size 1k;			#默认请求包头信息的缓存    
+		large_client_header_buffers 4 4k;		#大请求包头部信息的缓存个数与容量
+
+		upstream webserver {				#使用upstream定义后端服务器集群,集群名称任意
+			server 192.168.0.1:80 算法 状态;		#使用server定义集群中的具体服务器和端口
+				#调度算法:weight=n (设置轮询权重) ip_hash (相同ip访问相同服务器)
+				#服务状态:max_fails=n (最大失败次数) fail_timeout=n (失败后暂停时间) down (暂停服务)
+			server 0.0.0.0;				#web服务,默认端口80可以不写 默认权重为1
+		}
+		server{
+			list 80;
+			server_name localhost;
+			location / {
+				proxy_pass http://webserver;	#将请求转发给webserver集群
+			}
+		}
+
+		server{
+			listen *;					#!监听端口http:80	https:443 SSL
+			server_name ***;				#!域名
+			rewrite 旧地址 新地址 [选项];		#地址重写 选项:last break redirect permament
+			charset utf8;				#编码格式
+			auth_basic "提示信息";			#用户验证,文件位置
+			auth_basic_user_file "/usr/local/nginx/pass";
+			ssl_certificate      cert.pem;		#https证书
+			ssl_certificate_key  cert.key;		#https私钥
+			location / {				#匹配所有地址栏数据,优先级最低
+				root html;				#!网页路径
+			}
+			location ~ \.php$ {			#匹配php动态页面
+				root           html;
+				fastcgi_pass   127.0.0.1:9000;	#转发给php处理
+				fastcgi_index  index.php;
+				include        fastcgi.conf;	#读取配置文件
+			}
+			location /status {			#定义状态页面
+				stub_status on;
+				#allow IP地址;
+				#deny IP地址;
+			}
+			location ~* \.(jpg|jpeg|gif|png|css|js|ico|xml)$ {
+				expires        30d;		#定义客户端缓存时间为30天
+			}
+		}
+		虚拟web,复制粘贴修改
+	}
+
+	openssl genrsa > cert.key				#生成https私钥
+	openssl req -new -x509 -key cert.key > cert.pem	#生成https证书
+
+
+./html:		#存放网页
+
+./logs:		#存放日志
+

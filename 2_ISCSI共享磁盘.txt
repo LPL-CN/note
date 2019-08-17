@@ -1,0 +1,34 @@
+ISCSI共享:共享磁盘:3260
+
+iqn命名规范:
+	iqn.yyyy-mm.倒序域名:自定义标示
+
+服务端:
+提供服务的软件包:targetcli (target)
+
+执行targetcli命令,在交互界面下输入命令
+	1.建立后端存储backstore
+	/backstores/block create name=自定义名 dev=划分分区硬件地址
+	2.建立target磁盘组,服务端iqn名
+	/iscsi/ create iqn名
+	3.进行lun关联
+	/iscsi/iqn名/tpg1/luns create /backstores/block/自定义名
+	4.设置访问控制,客户端iqn名
+	/iscsi/iqn名/tpg1/acls create iqn名
+	5.设置监听ip地址
+	/iscsi/iqn名/tpg1/portals create ip_address=192.168.1.1
+重启
+开机自启
+
+客户端:
+提供服务的软件包:iscsi-initiator-utils
+	1.设置客户端iqn名
+	vim /etc/iscsi/initiatorname.iscsi
+	2.刷新客户端iqn名
+	systemctl restart iscsid
+	3.发现共享存储
+	iscsiadm -m discovery -t st -p ip地址:端口
+	4.重启加载共享存储
+	systemctl restart iscsi
+设置开机自启
+

@@ -1,0 +1,39 @@
+使用Varnish加速web服务
+	#可以讲后端服务器上的内容缓存到本地,用户不必重复寻找后端服务器访问资源,提高访问速度
+
+一个后端Web服务器
+一个Varnish缓存服务器
+
+Web服务器:
+	启动Web服务
+
+Varnish缓存服务器:
+	安装依赖包、创建用户:
+	yum -y install gcc readline-devel
+	yum -y install ncurses-devel
+	yum -y install pcre-devel
+	yum -y install python-docutils
+	useradd -s /sbin/nologin varnish
+
+	解压,源码编译安装,复制配置文件:
+	tar -xf varnish-5.2.1.tar.gz
+	cd varnish-5.2.1.tar.gz
+	./configure
+	make && make install
+	cp etc/example.vcl /usr/local/etc/varnish.vcl
+
+	修改配置文件:
+	/usr/local/etc/varnish.vcl
+		backend default {
+		.host = "Web服务器ip";
+		.port = "监听端口号";
+		}
+	varnish命令:
+	varnishd -f /usr/local/etc/default.vcl			#启动服务,默认存内存
+	#varnishd -s malloc,128M						#定义varnish使用内存作为缓存，空间为128M
+	#varnishd -s file,/var/lib/varnish_storage.bin,1G		#定义varnish使用文件作为缓存
+	varnishlog					#varnish日志
+	varnishncsa					#访问日志
+	varnishadm		#进入管理者模式
+	ban req.url ~ .*	#清空缓存数据，支持正则表达式
+

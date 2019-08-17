@@ -1,0 +1,14 @@
+自己既是服务端又是客户端:
+
+安装软件包:createrpo
+
+生成仓库数据文件:
+	createrpo /软件包路径
+
+写客户端配置文件:
+#	/etc/yum.repos.d/*.repo
+	[*]
+	name=**
+	baseurl=file:///软件包路径	#自己是服务端
+	enabled=1
+	gpgcheck=0

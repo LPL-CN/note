@@ -1,0 +1,34 @@
+LNMP
+Linux Nginx MySQL(MariaDB) PHP
+
+Nginx的默认访问日志文件:
+	/usr/local/nginx/logs/access.log
+Nginx的默认错误日志文件:
+	/usr/local/nginx/logs/error.log
+PHP默认错误日志文件:
+	/var/log/php-fpm/www-error.log
+
+源码安装:
+	Nginx
+yum安装:
+	mariadb mariadb-server mariadb-devel
+	php php-mysql php-fpm
+
+启动:
+	/usr/local/nginx/sbin/nginx
+	systemctl restart mariadb
+	systemctl enable mariadb
+	systemctl restart php-fpm
+	systemctl enable php-fpm
+
+构建LNMP平台:
+	php-fpm配置文件:
+		/etc/php-fpm.d/www.conf
+	Nginx配置文件:
+		/usr/local/nginx/conf/nginx.conf	#创建location,匹配地址栏数据
+		location ~ \.php$ {
+		    root           html;
+		    fastcgi_pass   127.0.0.1:9000;	#转发给php处理
+		    fastcgi_index  index.php;
+		    include        fastcgi.conf;	#读取配置文件
+		}

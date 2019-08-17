@@ -1,0 +1,22 @@
+swap交换空间(虚拟内存):
+
+划分磁盘空间:
+
+格式化文件系统:
+	mkswap 硬件路径
+
+启用交换分区:
+	swapon 硬件路径
+
+查看交换分区信息:
+	swapon -s
+
+开机自动挂载:
+	/etc/fstab
+	硬件路径 swap swap defaults 0 0
+
+关闭交换分区:
+	swapoff 硬件路径
+
+检测交换分区信息:
+	swapon -a

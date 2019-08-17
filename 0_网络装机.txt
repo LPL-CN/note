@@ -1,0 +1,93 @@
+PXE网络装机:
+
+###############################################################################
+
+部署好DHCP服务器:
+
+软件包:dhcp (dhcpd)
+
+修改配置文件:
+#	/etc/dhcp/dhcpd.conf
+	subnet 要分配的网段 netmask 子网掩码 {		#在分配ip的subnet位置最后添加
+	  range 地址池的范围(1.1.1.1 1.1.1.10);
+	  option domain-name-servers 分配的DNS服务器的地址;
+	  option routers 网关地址;
+	  default-lease-time 600;
+	  max-lease-time 7200;
+	  next-server tftp服务器地址;	#指定下一个tftp服务器地址
+	  filename "pxelinux.0";		#指定网卡引导文件名称,pxelinux.0(网络装机说明书)二进制文件
+	} 
+
+重启
+开机自启
+
+###############################################################################
+
+构建tftp服务:		#提供众多的引导文件,默认端口69
+
+1.软件包:tftp-server (tftp)
+重启
+	默认共享路径:
+#	/var/lib/tftpboot/
+
+2.装包:syslinux
+	cp /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/
+
+3.部署菜单文件:
+	mkdir /var/lib/tftpboot/pxelinux.cfg/	#创建菜单文件文件夹
+	mount /dev/cdrom /mnt/				#挂载光盘文件
+	cp /mnt/isolinux/isolinux.cfg /var/lib/tftpboot/pxelinux.cfg/default	#复制菜单文件
+
+4.部署图形模块和背景图片:
+	cp /mnt/isolinux/vesamenu.c32 /mnt/isolinux/splash.png /var/lib/tftpboot/
+
+5.部署启动内核和驱动程序:vmlinuz(启动内核) initrd.img(驱动程序)
+	cp /mnt/isolinux/vmlinuz /mnt/isolinux/initrd.img /var/lib/tftpboot/
+
+6.修改菜单文件
+#	vim /var/lib/tftpboot/pxelinux.cfg/default
+	default vesamenu.c32			#图形模块加载文件
+	timeout 600					#等待时间
+
+	menu background splash.png		#背景图片
+	menu title PXE Sever			#标题
+
+	label linux
+	  menu label ^Install CentOS 7		#选项
+	  menu default				#时间结束默认选择
+	  kernel vmlinuz				#启动内核
+	  append initrd=initrd.img 		#驱动程序
+
+###############################################################################
+
+构建Web服务:
+
+软件包:httpd (httpd)
+
+挂载光盘:
+	mkdir /var/www/html/centos
+	mount /dev/cdrom /var/www/html/centos
+
+重启
+
+###############################################################################
+
+实现无人值守安装:
+
+1.修改yum仓库名为[development]
+
+2.生成应答文件:
+软件包:system-config-kickstart (system-config-kickstart)
+打开软件:
+	LANG=en system-config-kickstart
+	选择,生成应答文件ks.cfg
+
+3.利用Web服务共享ks.cfg
+	cp */ks.cfg /var/www/html
+
+4.修改菜单文件
+#	vim /var/lib/tftpboot/pxelinux.cfg/default
+	label linux
+	  ***
+	  append initrd=initrd.img ks=http://192.168.4.7/ks.cfg
+

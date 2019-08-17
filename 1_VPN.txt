@@ -1,0 +1,123 @@
+GRE VPN			#Windows不支持
+
+Linux内核模块路径:		#所有模块都在此目录下
+	/lib/modules/3.10.0-862.el7.x86_64/kernel/
+			#*.ko	模块扩展名
+	lsmod			#查看已激活的模快
+	modprobe 模块名	#激活模块
+	modinfo 模块名	#查看模块信息
+	rmmod 模块名		#关闭模块
+
+启动GRE模块:
+	lsmod			#查看已激活的模快
+	modprobe ip_gre	#激活模块
+	modinfo ip_gre	#查看模块信息
+	rmmod ip_gre	#关闭模块
+
+链接双方都要设置:
+	ip tunnel add 隧道名 mode gre remote 对方ip local 本机ip
+		#ip tunnel add创建隧道，ip tunnel help可以查看帮助
+		#mode设置隧道使用gre模式
+		#local后面跟本机的IP地址，remote后面是与其他主机建立隧道的对方IP地址
+	ip link show		#查看网卡状态,ip a s
+	ip link set 隧道名 up	#激活
+	ip addr add 本地隧道ip peer 对方隧道ip dev 隧道名
+		#为隧道tun0设置本地IP地址
+		#隧道对面的主机的隧道IP
+
+	echo "1" > /proc/sys/net/ipv4/ip_forward	
+		#开启路由转发,将本机变成软路由,翻墙必开+NAT
+	firewall-cmd --set-default-zone=trusted
+
+
+PPTP VPN
+
+Linux服务器:
+	yum install pptpd-1.4.0-2.el7.x86_64.rpm
+pptpd配置文件:
+	/etc/ppp/options.pptpd
+	/etc/ppp/chap-secrets
+	/etc/pptpd.conf
+	/etc/sysconfig/pptpd
+
+	/etc/pptpd.conf
+		最后两行参考模板配置本机ip和地址池ip
+	/etc/ppp/options.pptpd
+		require-mppe-128		#加密方式
+		ms-dns 8.8.8.8		#给客户端指定DNS服务器
+	/etc/ppp/chap-secrets
+		用户名   服务器标记   密码   客户端
+	systemctl start pptpd
+	systemctl enable pptpd
+	echo "1" > /proc/sys/net/ipv4/ip_forward
+	firewall-cmd --set-default-zone=trusted
+	iptables -t nat -A POSTROUTING -s 私网ip -j SNAT --to-source 公网ip
+	#翻墙设置,实现NAT效果
+
+Win客户端:
+	设置新连接... ...
+
+
+L2TP+IPSec VPN
+
+Linux服务器:
+软件IPSec:
+	yum -y install libreswan
+IPSec配置文件:
+	/etc/ipsec.d/myipsec.conf
+		onn IDC-PSK-NAT
+		    rightsubnet=vhost:%priv
+		    also=IDC-PSK-noNAT
+
+		conn IDC-PSK-noNAT
+		    authby=secret			#加密认证
+			ike=3des-sha1;modp1024
+			phase2alg=aes256-sha1;modp2048
+		    pfs=no
+		    auto=add
+		    keyingtries=3
+		    rekey=no
+		    ikelifetime=8h
+		    keylife=3h
+		    type=transport
+		    left=服务器ip			#ip
+		    leftprotoport=17/1701
+		    right=%any			#任何客户端可链接
+		    rightprotoport=17/%any
+创建预共享秘钥:
+	cat /etc/ipsec.secrets
+	vim /etc/ipsec.d/*.secrets
+		服务器ip   %any:   PSK   秘钥
+	systemctl start ipsec  
+
+软件XL2TP:
+	yum localinstall xl2tpd-1.3.8-2.el7.x86_64.rpm
+修改配置文件:
+	/etc/xl2tpd/xl2tpd.conf
+		ip range = 地址池ip	#客户端地址池ip
+		local ip = 服务器ip	#服务器ip
+	/etc/ppp/options.xl2tpd
+		ms-dns 8.8.8.8		#给客户端指定DNS服务器
+		#crtscts			#注释该行
+		#lock				#注释该行
+		require-mschap-v2		#加密方式
+	/etc/ppp/chap-secrets
+		用户名   服务器标记   密码   客户端
+	systemctl start xl2tpd
+	echo "1" > /proc/sys/net/ipv4/ip_forward
+	firewall-cmd --set-default-zone=trusted
+	iptables -t nat -A POSTROUTING -s 私网ip -j SNAT --to-source 公网ip
+	#翻墙设置,实现NAT效果
+Win客户端:
+	新建连接
+	单击"开始"，单击"运行"，键入"regedit"，然后单击"确定"
+	找到下面的注册表子项，然后单击它：
+	HKEY_LOCAL_MACHINE\ System\CurrentControlSet\Services\Rasman\Parameters
+	在"编辑"菜单上，单击"新建"->"DWORD值"
+	在"名称"框中，键入"ProhibitIpSec"
+	在"数值数据"框中，键入"1"，然后单击"确定"
+	退出注册表编辑器，然后重新启动计算机
+
+
+
+

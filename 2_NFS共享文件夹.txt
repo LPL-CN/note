@@ -1,0 +1,20 @@
+共享文件夹
+NFS (TCP/UDP 2049) 
+RPC (TCP/UDP 111)
+
+服务端,提供共享:
+提供服务的软件包: nfs-utils (nfs-server)
+
+配置文件路径: 
+#	/etc/exports
+	共享文件夹路径   客户机ip地址(权限)   客户机ip地址(权限)   ...
+
+重启
+开机自启
+
+
+客户端,访问共享:
+查看服务端的共享: showmount -e ip地址
+挂载共享文件夹: mount ip:共享文件夹路径 挂载点
+开机自动挂载,/etc/fstab: 
+	ip:路径 挂载点 nfs *,_netdev 0 0			# _netdev:声明网络设备,指明本设备挂载需要网络参数

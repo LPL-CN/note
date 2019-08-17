@@ -1,0 +1,21 @@
+NTP时间同步服务
+
+装包:
+	yum -y install chrony
+
+服务器:
+配置文件:
+	/etc/chrony.keys
+	/etc/chrony.conf:
+		server NTP服务器地址 iburst	#server用户客户端指向上层NTP服务器
+		allow ip				#允许那个IP或网络访问NTP
+		#deny ip				#拒绝那个IP或网络访问NTP
+		local stratum 10			#设置NTP服务器的层数量
+	systemctl restart chronyd
+	systemctl enable chronyd
+
+客户端:
+	/etc/chrony.conf:
+		server NTP服务器地址 iburst	#server用户客户端指向上层NTP服务器
+	systemctl restart chronyd
+	systemctl enable chronyd

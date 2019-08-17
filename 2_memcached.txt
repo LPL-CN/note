@@ -1,0 +1,32 @@
+memcached(内存、缓存数据库)
+	速度快,存在内存中,重启数据丢失
+	没有数据库,没有数据表
+	数据存储: set 变量名 = 值
+
+安装软件包:memcached
+
+配置文件:
+	/usr/lib/systemd/system/memcached.service	#启动文件
+	/etc/sysconfig/memcached				#参数数据
+
+安装telnet		#用来连接数据库
+	telnet ip 11211	#链接
+	set 变量名 0 180 3	#0表示不压缩，180为数据缓存时间，3为需要存储的数据字节数量(严格)。
+				#add 只能新建  replace 只能修改  append 追加
+	get 变量名		#获取变量
+	delete 变量名	#删除变量
+	flush_all		#清空数据库
+	quit			#退出
+
+在集群服务器上:LNMP+memcached
+
+给php添加链接memcached的功能:
+	yum -y install php-pecl-memcache
+
+修改配置文件:
+	/etc/php-fpm.d/www.conf
+	最后两行:
+	php_value[session.save_handler] = memcache
+	#定义Session信息存储在公共的memcached服务器上，主机参数中为memcache（没有d）
+	php_value[session.save_path] = "tcp://192.168.2.5:11211"
+	#通过path参数定义公共的memcached服务器在哪（服务器的IP和端口）

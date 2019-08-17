@@ -1,0 +1,89 @@
+DNS域名解析:
+
+服务端:
+
+软件包:bind (named) bind-chroot
+
+递归解析:是否主动访问子域DNS服务器获取域名解析结果
+
+迭代查询:逐级查询,从根服务器开始,逐级询问
+
+DNS服务器修改主配置文件:
+#	/etc/named.conf			#主配置文件,本机负责解析的域名
+	options {
+		***
+		directory "/var/named";		#指定地址库文件存放位置
+		recursion yes/no;			#递归解析开关
+		***
+	};
+	zone "解析的域名" IN {
+		type master/slave;		#设置服务器身份
+		file "地址库文件名(域名.zone)"	#指定地址库文件名
+	};
+	
+缓存DNS服务器修改主配置文件:
+	options {
+		forwarders { ip地址; };		#缓存DNS服务器,只需要加这一句
+	}
+
+DNS服务器配置分离解析修改主配置文件:		#所有zone都必须在view里面,由上到下,匹配即停止,每个view里面zone的类型和数量必须一致
+#	/etc/named.conf			#主配置文件,本机负责解析的域名
+	options {
+		***
+		directory "/var/named";		#指定地址库文件存放位置
+		recursion yes/no;			#递归解析开关
+		***
+	};
+	acl "test1" { 192.168.1.1; 192.168.2.0/24; ... ... }
+	... ...
+	view "分类1" {
+	   match-clients { test1; };
+	   zone "解析的域名" IN {
+		type master/slave;
+		file "地址库文件名(域名.***)"
+	    };
+	   zone ... ...
+	};
+	... "分类n" ...
+	view "other" {
+	   match-clients { any; };
+	   zone "解析的域名" IN {
+		type master/slave;
+		file "地址库文件名(域名.other)"
+	    };
+	   zone ... ...
+	};
+	
+
+#	/var/named/地址库文件名		#地址库文件,存放域名解析结果,DNS资源解析记录,正向解析记录(A),(NS),(CNAME)
+	***
+	解析的域名.	NS	管理者A.		#地址必须以.结尾,如果不以.则自动补全负责的域名
+	子域域名.	NS	管理者B.		#递归解析,子域解析
+	管理者A.	A	管理者Aip地址		#A:ipv4	AAAA:ipv6
+	管理者B.	A	管理者Bip地址
+	*		A	对应ip地址		#泛域名解析,优先级最低
+	解析的地址1.	A	对应ip地址1
+	解析的地址1.	A	对应ip地址2		#解析记录负载均衡,随机解析该地址下的其他ip地址
+	解析的地址2.	A	对应ip地址3
+	解析的地址3.	CNAME	解析的地址2.		#解析记录的别名
+	$GENERATE 1-50 地址$ A 192.168.10.$	#规律的泛域名解析
+
+重启
+开机自启
+
+
+客户端:
+
+修改配置文件:
+#	/etc/resolv.conf
+	nameserver DNS服务器ip地址
+
+	nslookup 测试
+
+主机名映射文件:	#为本机做域名解析,最高优先级,匹配即停止
+	/etc/hosts
+	ip 域名1 域名2 ... ...
+
+
+
+

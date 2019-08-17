@@ -1,0 +1,76 @@
+配置JDK环境:
+	yum -y install java-1.8.0-openjdk
+	yum -y install java-1.8.0-openjdk-headless
+
+安装Tomcat:
+	tar -xf  apache-tomcat-8.0.30.tar.gz
+	mv apache-tomcat-8.0.30  /usr/local/tomcat
+目录:
+	bin/			#主程序目录
+	lib/			#库文件目录
+	logs/			#日志目录  
+	temp/			#临时目录
+	work/			#自动编译目录jsp代码转换servlet
+	conf/			#配置文件目录
+	webapps/		#页面目录
+启动:
+	/usr/local/tomcat/bin/startup.sh
+如果启动不起来,则修改生成随机数文件:
+	mv /dev/random  /dev/random.bak
+	ln -s /dev/urandom  /dev/random
+
+主配置文件:
+	cat /usr/local/tomcat/conf/server.xml
+	<Server>
+		<Service>
+			<Connector port=8080 />
+			<Connector port=8009 />
+			<Engine name="Catalina" defaultHost="localhost">
+
+			<Host name="域名" appBase="根目录" unpackWARS="true" autoDeploy="true">
+			<Context path="访问路径" docBase="跳转目录" />	#页面跳转,可以有多个
+			<Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+				prefix="日志名" suffix=".txt"
+				pattern="%h %l %u %t &quot;%r&quot; %s %b" />	#生成日志
+			</Host>
+
+			虚拟web,复制粘贴Host
+		</Service>
+	</Server>
+
+SSL加密,生成秘钥、证书:
+	keytool -genkeypair -alias tomcat -keyalg RSA -keystore /usr/local/tomcat/keystore	#提示输入密码为:123456
+			#-genkeypair	生成密钥对
+			#-alias tomcat	密钥别名
+			#-keyalg RSA	定义密钥算法为RSA算法
+			#-keystore		定义密钥文件存储在:/usr/local/tomcat/keystore
+
+修改配置文件,创建支持加密连接的Connector:
+	<Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+	maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
+	keystoreFile="/usr/local/tomcat/keystore" keystorePass="123456"	#自己写
+	clientAuth="false" sslProtocol="TLS" />
+					#备注，默认这段Connector被注释掉了，打开注释，添加密钥信息即可
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

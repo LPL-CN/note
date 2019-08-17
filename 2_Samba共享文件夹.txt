@@ -1,0 +1,31 @@
+Windows和Linux跨平台共享:
+
+smb:用户验证通信协议
+
+服务端:
+软件包:samba (smb)
+文件系统(独有):cifs
+
+主配置文件:
+#	/etc/samba/smb.conf
+	[共享名]
+	path = 实际共享路径
+
+重启
+开机自启
+
+samba共享账号:
+	1.基于本地用户
+	2.采用独立密码
+	pdbedit -a 用户名	#添加账号
+	pdbedit -x 用户名	#删除账号
+	pdbedit -L		#列出所有账号
+
+
+
+客户端Linux:
+	安装支持软件:cifs_utils
+	挂载:
+	mount -o username=用户名,password=密码 //ip/共享名 挂载点
+	永久挂载:
+	//ip/共享名 挂载点 cifs defaults,username=用户名,password=密码,_netdev 0 0
