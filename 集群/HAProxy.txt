@@ -1,0 +1,48 @@
+HAProxy负载平衡集群:代理
+
+服务端:
+安装服务:
+	yum -y install haproxy
+修改配置文件:
+	/etc/haproxy/haproxy.cfg
+	global			#全局设置
+		log 127.0.0.1 local2		#[err warning info debug]
+		chroot /usr/local/haproxy
+		pidfile /var/run/haproxy.pid	#haproxy的pid存放路径
+		maxconn 4000			#最大连接数，默认4000
+		user haproxy
+		group haproxy
+		daemon				#创建1个进程进入deamon模式运行
+	defaults			#默认设置
+		mode http				#默认的模式mode { tcp|http|health}
+		log global 
+		option dontlognull		#不记录健康检查的日志信息
+		option httpclose			#每次请求完毕后主动关闭http通道
+		option httplog			#日志类别http日志格式
+		option forwardfor			#后端服务器可以从Http Header中获得客户端ip
+		option redispatch			#serverid服务器挂掉后强制定向到其他健康服务器
+		timeout http-request 10s
+		timeout queue 1m
+		timeout connect 10s 		#如果backend没有指定，默认单位ms
+		timeout client 300s		#客户端连接超时
+		timeout server 300s		#服务器连接超时
+		timeout http-keep-alive 10s
+		timeout check 10s
+		maxconn 3000			#最大连接数
+		retries 3				#3次连接失败就认为服务不可用，也可以通过后面设置
+
+	listen stats 0.0.0.0:1080		#监听端口
+		stats refresh 30s			#统计页面自动刷新时间
+		stats uri /stats			#统计页面url
+		stats realm Haproxy Manager	#进入管理解面查看状态信息
+		stats auth admin:admin		#统计页面用户名和密码设置
+	  
+	listen 集群名 *:80		#定义集群
+		balance roundrobin		#设置模式
+		server web1 后端服务器ip:80 check inter 2000 rise 2 fall 5
+						健康检查	2S一次	连续2次成功	连续5次失败
+		server web2 后端服务器ip:80 check inter 2000 rise 2 fall 5
+
+帮助:
+	/usr/share/doc/haproxy-*
+
