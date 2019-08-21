@@ -20,6 +20,7 @@ Ceph:
 		192.168.4.11	node1
 		192.168.4.12	node2
 		192.168.4.13	node3
+		192.168.4.*		node*
 	for i in client node1  node2  node3
 	do
 		scp  /etc/hosts   $i:/etc/
@@ -57,8 +58,8 @@ Ceph:
 准备一些空磁盘:
 
 
-部署ceph:
-
+部署Ceph:
+	ceph -s		#查看软件工作状态
 一、安装部署软件:ceph-deploy
 1.安装部署工具,学习工具的语法格式
 	yum -y install ceph-deploy	#ceph-deploy可多层使用--help
@@ -66,14 +67,15 @@ Ceph:
 	mkdir ceph-cluster		#执行ceph-deploy脚本,必须在该目录下
 	cd ceph-cluster/
 
-二、部署ceph集群:
+二、部署Ceph集群,创建mon服务器:
+mon服务器:
 1.创建Ceph集群配置,在ceph-cluster目录下生成Ceph配置文件
-	ceph-deploy new node1 node2 node3	#主配置文件ceph.conf
+	ceph-deploy new node1 node2 node3	#主配置文件ceph.conf,有几个mon写几个
 	cat ceph.conf
 2.给所有节点安装ceph相关软件包
 	for i in node1 node2 node3
 	do
-		ssh $i "yum -y install ceph-mon ceph-osd ceph-mds ceph-radosgw"	#安装服务
+		ssh $i "yum -y install ceph-mon ceph-osd ceph-mds ceph-radosgw"	#安装服务,用哪个装哪个
 	done
 	rpm -qa | grep ceph
 3.初始化所有节点的mon服务,也就是启动mon服务
@@ -85,12 +87,13 @@ Ceph:
 		public_network = 192.168.4.0/24
 	ceph-deploy --overwrite-conf config push node1 node2 node3	#重新推送配置文件
 三、创建OSD:
+mon服务器:
 1.创建存储服务器的JOURNAL缓存盘(实际环境中用固态硬盘做缓存盘以提高性能):
-	for i in node1 node2 node3
+	for i in node* node* node*					#根据实际情况决定osd是哪几个
 	do
 		ssh $i "parted /dev/vdb mklabel gpt"			#parted非交互式分区工具
 		ssh $i "parted /dev/vdb mkpart primary 1 50%"
-		ssh $i "parted /dev/vdb mkpart primary 50% 100%"
+		ssh $i "parted /dev/vdb mkpart primary 50% 100%"	#根据实际情况,决定做几个缓存盘
 	done
 	lsblk
 2.磁盘分区后的默认权限无法让ceph软件对其进行读写操作,需要修改权限
@@ -100,23 +103,23 @@ Ceph:
 	vim /etc/udev/rules.d/ceph-vdb.rules			#设置规则,永久有效
 		ENV{DEVNAME}=="/dev/vdb1",OWNER="ceph",GROUP="ceph"
 		ENV{DEVNAME}=="/dev/vdb2",OWNER="ceph",GROUP="ceph"
-   #	for i in node1 node2 node3
+   #	for i in node* node* node*
 	do
 		ssh $i "chown ceph:ceph /dev/vdb1"
 		ssh $i "chown ceph:ceph /dev/vdb2"
-		ssh $i "echo 'ENV{DEVNAME}=="/dev/vdb1",OWNER="ceph",GROUP="ceph"' >  /etc/udev/rules.d/ceph-vdb.rules"
-		ssh $i "echo 'ENV{DEVNAME}=="/dev/vdb2",OWNER="ceph",GROUP="ceph"' >> /etc/udev/rules.d/ceph-vdb.rules"
+		ssh $i "echo 'ENV{DEVNAME}==\"/dev/vdb1\",OWNER=\"ceph\",GROUP=\"ceph\"' >  /etc/udev/rules.d/ceph-vdb.rules"
+		ssh $i "echo 'ENV{DEVNAME}==\"/dev/vdb2\",OWNER=\"ceph\",GROUP=\"ceph\"' >> /etc/udev/rules.d/ceph-vdb.rules"
 	done
 	ls -ld /dev/vdc /dev/vdd
 3.初始化清空磁盘数据
-	for i in node1 node2 node3
+	for i in node* node* node*				#根据实际情况决定格式化osd的磁盘
 	do
 		ceph-deploy disk zap $i:vdc $i:vdd		#格式化$i的vdc,vdd
 	done
 4.创建OSD存储空间
 	#创建osd存储设备,vdc为集群提供存储空间,vdb1提供JOURNAL缓存
 	#每个存储设备对应一个缓存设备，缓存需要SSD,不需要很大
-	for i in node1 node2 node3
+	for i in node* node* node*				#根据实际情况决定决定哪几台服务器提供osd存储
 	do
 		ceph-deploy osd create $i:vdc:/dev/vdb1 $i:vdd:/dev/vdb2
 	done
@@ -132,9 +135,9 @@ Ceph:
 1.查看共享池
 	ceph osd lspools
 2.创建镜像,查看镜像
-	rbd create 镜像名 --image-feature  layering --size 10G		#默认在rbd共享池内
-	rbd create 共享池/镜像名  --image-feature  layering --size 10G
-	#--image-feature参数指定我们创建的镜像有哪些功能,layering是开启COW(快照)功能
+	rbd create 镜像名 --image-feature layering --size 10G		#默认在rbd共享池内
+	rbd create 共享池/镜像名 --image-feature layering --size 10G
+		#--image-feature参数指定我们创建的镜像有哪些功能,layering是开启COW(快照)功能
 	rbd list				#列出所有镜像
 	rbd info 镜像名			#查看镜像详细属性
 二、动态调整
@@ -163,24 +166,80 @@ Ceph:
 2.给镜像创建快照
 	rbd snap create 镜像名 --snap 快照名
 3.还原快照
+	umount /mnt/*			#还原快照必须取消挂载
 	rbd snap rollback 镜像名 --snap 快照名
+	mount /dev/rbd* /mnt/*
+4.创建快照克隆
+	rbd snap protect 镜像名 --snap 快照名		#保护镜像
+	rbd clone 镜像名 --snap 快照名 克隆出来的镜像名 --image-feature layering	#克隆镜像很多数据都来自于快照链
+	rbd flatten 克隆出来的镜像名		#如果希望克隆镜像可以独立工作,就需要将父快照中的数据全部拷贝一份
+	
+
+KVM虚拟机使用ceph共享:			#块储存应用
+一、一台mon服务器上创建镜像,查看密码
+	rbd create 镜像名 --image-feature layering --size 10G
+	rbd list
+	rbd info 镜像名
+	cat /etc/ceph/ceph.conf					#配置文件 
+	cat /etc/ceph/ceph.client.admin.keyring		#账户文件,用户名,密码
+二、真实机上操作,创建KVM虚拟机			#secret(秘钥)
+1.创建secret,告诉KVM访问ceph的用户名密码
+	vim *.xml					#新建临时文件
+		<secret ephemeral='no' private='no'>
+			<usage type='ceph'>
+				<name>client.admin secret</name>
+			</usage>
+		</secret>
+	virsh secret-define *.xml					#使用XML配置文件创建secret,生成随机UUID,代表账户信息
+	virsh secret-list							#查看所有secret
+	virsh secret-set-value --secret UUID值 --base64 密码	#UUID值:secret的UUID 密码:client.admin账户的密码
+2.修改虚拟机xml文件,调用云盘
+	virsh edit 虚拟机名
+	<disk type='network' device='disk'>
+		<driver name='qemu' type='raw'/>
+		<auth username='admin'> 
+			<secret type='ceph' uuid='UUID值'/>	#UUID值:secret的UUID
+		</auth>
+		<source protocol='rbd' name='rbd/镜像名'>	#rbd:共享池 镜像名:挂载的共享池内镜像的名字
+			<host name='monip' port='6789'/>	#monip:ceph服务mon服务器的ip name:6789:ceph调用的端口
+		</source>
+		<target dev='磁盘名' bus='virtio'/>		#磁盘名:在虚拟机上显示的名字
+	</disk>
+	poweroff,查看磁盘
 
 
+Ceph文件系统:			#启动服务,创建两个共享池,做一个文件系统   文件系统:inode+block
+环境准备:
+mon服务器:
+	cd ceph-culster/
+	ceph-deploy mds create node*		#配置启动node*的mds服务
+   #	ceph-deploy admin node*			#如果没有,则执行命令同步配置文件和key同步给node*
+mds服务器:	
+	systemctl status ceph-mds@\*		#查看服务状态
+ceph集群内的任意服务器:
+	ceph osd pool create lpl_data 128		#作为block 创建存储池，对应2的n次方个PG(目录)
+	ceph osd pool create lpl_metadata 128	#作为inode
+	ceph mds stat					#查看mds状态
+	ceph osd lspools					#查看共享池
+	ceph fs new myfs1 lpl_metadata lpl_data	#合并文件系统,前面的是inode,后面的是block !该操作只能做一次,只有一个文件系统共享
+	ceph fs ls						#查看文件系统
+客户端挂载使用:
+	mount -t ceph monip:6789:/ 挂载点 -o name=用户名,secret=密码	#文件系统类型为ceph
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+对象存储服务器:		#启动服务
+环境准备:
+mon服务器:
+	cd ceph-cluster/
+   #	ceph-deploy install --rgw node5	#脚本远程装rgw包
+	ceph-deploy rgw create node*		#配置启动node*的rgw服务
+   #	ceph-deploy admin node*			#如果没有,则执行命令同步配置文件和key同步给node*
+radosgw服务器:		#RGW默认服务端口为7480
+	systemctl status ceph-radosgw@\*	#查看服务状态
+	/etc/ceph/ceph.conf			#rgw配置文件,追加可以更改使用的端口
+		[client.rgw.node*]
+		host = node*
+		rgw_frontends = "civetweb port=*"
+客户端:
+	需要API接口支持
 
