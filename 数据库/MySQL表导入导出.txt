@@ -1,0 +1,25 @@
+MySQL
+	在数据库内执行系统命令在前面加system
+	在系统执行mysql命令,登录命令 -e 'sql命令'
+
+MySQL检索路径:
+查看检索路径:
+	show variables like "secure_file_priv";
+修改检索路径:
+	vim /etc/my.cnf
+		[mysqld]
+		secure_file_priv=自定义路径
+	创建目录,修改所有者为mysql
+	重启mysql
+
+导入:			#文件内容导入到表
+		注意:分隔符与文件一致,字段类型个数与表绝对一致,指定文件的绝对路径
+	创建库,创建表(按照文件内容设置合适的表结构),将文件放在检索路径下
+	load data infile "/目录名/文件" into table 库.表 fields terminated by "列分隔符" lines terminated by "行分隔符";
+
+导出:			#表内容导出到文件
+		注意:导出由查询决定,导出不包含字段名,文件唯一且自动创建
+	查询命令 into outfile "/目录名/文件";
+	查询命令 into outfile "/目录名/文件" fields terminated by "列分隔符";
+	查询命令 into outfile "/目录名/文件" fields terminated by "列分隔符" lines terminated by "行分隔符";
+

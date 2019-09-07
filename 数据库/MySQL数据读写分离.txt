@@ -1,0 +1,97 @@
+读写分离:
+	部署代理服务器,实现客户对数据库的读和写操作不在同一台服务器上,提高读写效率
+	客户端访问代理服务器,在主服务器上进行写操作,在从服务器上进行读操作
+
+
+maxscale软件:
+	软件:
+		maxscale
+	主配置文件:
+		/etc/maxscale.cnf
+	日志文件:
+		/var/log/maxscale/maxscale.log
+	软件安装路径:
+		rpm -ql maxscale
+
+maxscale代理服务器:
+	装包:
+		yum -y install maxscale-2.1.2-1.rhel.7.x86_64.rpm
+	修改配置文件:
+		cp /etc/maxscale.cnf /root/cnf
+		vim /etc/maxscale.cnf
+			[maxscale]
+			threads=auto		#开启线程数量
+
+			[server*]			#定义后端服务器*
+			type=server			#类型
+			address=数据库服务器ip	#指定服务器ip
+			port=3306			#端口
+			protocol=MySQLBackend	#后端服务器
+
+			[MySQL Monitor]		#监控MySQL
+			type=monitor
+			module=mysqlmon
+			servers=server*,...	#监控的服务器
+			user=maxscalemon		#连接数据库监控数据库状态的用户
+			passwd=***			#密码
+			monitor_interval=10000
+
+			#[Read-Only Service]	#定义只读服务
+
+			[Read-Write Service]	#定义读写服务
+			type=service		#类型
+			router=readwritesplit	#读写分离
+			servers=server*,...	#进行读写分离的服务器
+			user=maxscalerouter	#连接数据库验证客户端连接用户的用户
+			passwd=***			#连接密码
+			max_slave_connections=100%
+
+			[MaxAdmin Service]	#管理服务
+			type=service
+			router=cli
+
+			#[Read-Only Listener]	#定义只读服务使用的端口号
+
+			[Read-Write Listener]	#定义读写服务使用的端口号
+			type=listener
+			service=Read-Write Service
+			protocol=MySQLClient
+			port=4006
+
+			[MaxAdmin Listener]	#定义管理服务使用的端口号
+			type=listener
+			service=MaxAdmin Service
+			protocol=maxscaled
+			socket=default
+			port=4016
+
+后端服务器:
+	在主数据库服务器上添加授权用户:
+		grant replication slave, replication client on *.* to maxscalemon@"%" identified by "123qqq...A";
+					#replication slave:监控主从状态   replication client:监控数据库状态
+		grant select on mysql.* to maxscalerouter@"%" identified by "123qqq...A";
+
+maxscale代理服务器:
+	启动服务:
+		maxscale -f /etc/maxscale.cnf
+	查看进程信息:
+		netstat -antulp | grep maxscale
+	停止服务:
+		killall -9 maxscale
+	查看监控信息:
+		maxadmin -uadmin -pmariadb -P4016
+		MaxScale> list servers
+		MaxScale> exit
+
+客户端:
+	测试读写:
+		mysql -h代理服务器ip -P4006 -u用户名 -p密码
+
+
+
+
+
+
+
+
+

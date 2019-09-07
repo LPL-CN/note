@@ -1,0 +1,69 @@
+MySQL 主从同步:
+	一主一从结构
+	一主多从结构
+	主从从结构(链式复制,级联复制):
+		主从节点服务器:
+		vim /etc/my.cnf
+			log_slave_updates		#允许级联复制
+	主主结构
+
+主服务器:
+	启用binlog日志:
+		vim /etc/my.cnf
+		[mysqld]
+			server_id=*			#指定服务器id
+			log_bin=binlog日志文件名	#指定日志文件名
+		systemctl restart mysqld
+	授权用户:		#replication slave 从服务器权限
+		mysql -uroot -p密码
+		> grant replication slave on *.* to slave用户名@"%" identified by "密码";
+	查看日志信息:
+		> show master status;
+
+从服务器:
+	指定server_id:
+		vim /etc/my.cnf
+		[mysqld]
+			server_id=*			#id不能与主服务器一样
+		systemctl restart mysqld
+	保证与主服务器数据库数据完全一致:
+		主:					#--master-data 指定当前日志及偏移量
+		mysqldump -uroot -p密码 --master-data -A > *.sql
+		scp *.sql root@从服务器ip:/
+		从:
+		mysql -uroot -p密码 < *.sql
+	指定主服务器信息
+		grep master51 *.sql	#查看备份时记录的日志和偏移量
+		mysql -uroot -p密码
+		> change master to 
+		-> master_host="主服务器ip",
+		-> master_user="slave用户名",
+		-> master_password="密码",
+		-> master_log_file="binlog日志文件名",
+		-> master_log_pos=偏移量;
+		> start slave;			#启动slave进程
+		> show slave status\G;		#查看进程状态
+	从服务器相关文件,存放在数据库目录下:
+		master.info				#主库信息
+		relay-log.info			#中继日志信息
+		主机名-relay-bin.xxxxxx		#中继日志,同时存在2个
+		主机名-relay-bin.index		#索引文件
+	线程异常:
+		> stop slave;
+		> show slave status;
+			Last_IO_Error:IO线程错误信息
+			Last_SQL_Error: SQL线程错误信息
+		解决问题
+		> start slave;
+		无法解决,终极手段,删除从服务器相关文件,重新配置
+
+复制模式:
+	 vim /etc/my.cnf
+	[mysqld]
+		plugin-load="rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so"
+		rpl-semi-sync-master-enabled = 1
+		rpl-semi-sync-slave-enabled = 1
+
+
+
+

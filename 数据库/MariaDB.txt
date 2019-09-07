@@ -1,0 +1,26 @@
+软件包:mariadb-sever
+
+/etc/my.cnf	#MariaDB主配置文件
+
+[root@server0 ~]# 
+	mysqladmin [-u 用户名] [-p[旧密码]] password '新密码'
+	mysql [-u 用户名] [-p[密码]]
+	mysql [-u 用户名] [-p[密码]] 数据库名 < 备份文件.sql
+
+MariaDB [(none)]>
+	show databases;
+	create database 库名;
+	drop database 库名;
+	use 库名;
+	show tables;
+	desc 表名;
+	grant 权限列表 on 库名.表名 to 用户名@客户机地址 identified by '密码';
+	flush privileges;
+insert:
+	insert 表名 values('*','*','*'...);
+delete:
+	delete from [库名.]表名 where 条件;
+update:
+	
+select:
+	select 表字段 from [库名.]表名 where 条件;

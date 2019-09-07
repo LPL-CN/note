@@ -1,0 +1,117 @@
+物理备份:
+	mkdir /mysql.bak
+	cp -rp /var/lib/mysql /mysql.bak
+	tar -zcPf /mysql.bak/mysql.tar.gz /var/lib/mysql
+恢复:
+	rm -rf /var/lib/mysql
+	cp -rp /mysql.bak/mysql /var/lib/
+	tar -xPf /mysql.bak/mysql.tar.gz
+	chown -R mysql:mysql /var/lib/mysql
+
+
+逻辑备份:
+完全备份:
+	mysqldump -uroot -p密码 库名 > 目录/xxx.sql
+		#库名 (-A:所有库)(库名:单个库)(库名 表名:单张表)(-B 库1 库2: 多个库)
+完全恢复:
+	mysql -uroot -p密码 [库名] < 目录/xxx.sql
+		#库名 (-A -B 备份的数据不需要加库名)(单个库,单张表恢复需要加库名)
+
+完全备份后,创建新的日志文件:
+	mysqldump -uroot -p密码 --flush-logs 库名 > 目录/xxx.sql
+
+增量备份:
+	show variables;
+	使用binlog日志做增量备份
+	开启binlog日志:
+		vim /etc/my.cnf
+		[mysqld]
+			server_id=50			#编号
+			log_bin[=目录名/文件名]		#取消注释,启动binlog日志,[自定义文件路径,文件名]
+			binlog_format="名称"		#指定日志记录格式 statement:报表模式 row:行模式 mixed:混合模式
+			max_binlog_size=500m		#不写,默认1G写新的日志文件
+	修改自定义目录所有者,所属组
+	每次重起服务创建新的日志文件,向编号最大的日志文件内写入内容
+	进入mysql:
+		show master status;			#查看日志文件名,默认在数据库目录下
+		flush logs;					#手动创建新的日志文件
+		purge master logs to '日志文件名.编号';	#删除编号前的所有日志文件
+		reset master;				#删除所有日志文件,并生成第一个日志
+
+	查看日志文件:
+		mysqlbinlog 目录/日志文件
+
+	读取binlog日志恢复数据:
+		mysqlbinlog 目录/日志文件 | mysql -uroot -p密码
+
+	读取日志指定范围内的sql命令恢复数据:
+		mysqlbinlog 选项 目录/日志文件 | mysql -uroot -p密码
+		偏移量:
+			start-position=数字
+			stop-position=数字
+		时间点:
+			start-datetime="yyyy-mm-dd hh:mm:ss"
+			stop-datetime="yyyy-mm-dd hh:mm:ss"
+
+
+innobackupex:
+
+	innobackupex 选项
+
+	常用选项:
+		--host				#默认本地
+		--port				#默认3306
+		--databases="库/表"		#默认所有库
+		--user
+		--password
+		--no-timestamp			#不以时间命名备份目录
+		--apply-log				#准备恢复数据
+		--copy-back				#恢复数据
+		--incremental 目录			#增量备份
+		--incremental-basedir=目录	#制定上一次备份的目录
+		--incremental-dir=目录		#恢复时指定增量备份目录
+		--export				#导出表信息
+		import				#导入表空间
+
+	完全备份:					#目录自动创建
+		innobackupex --user root --password 密码 备份目录 [--no-timestamp]
+	完全恢复:
+		systemctl stop mysqld					#停止数据库服务
+		rm -rf /var/lib/mysql/*					#清空数据库文件目录
+		innobackupex --apply-log 备份目录			#准备恢复数据
+		innobackupex --copy-back 备份目录			#恢复数据
+		chown -R mysql:mysql /var/lib/mysql			#修改数据库目录所有者所属组
+		systemctl restart mysqld					#启动数据库服务
+
+	完全备份单张表:
+		innobackupex --user root --password 密码 --databases="库" 备份目录 [--no-timestamp]
+	完全备份恢复单张表数据:
+		> alter table 库.表 discard tablespace;		#删除表空间 表名.ibd
+		innobackupex --apply-log --export 备份目录		#导出表信息
+		cp 备份目录/库/表.{cfg,exp,ibd} /var/lib/mysql/库/	#拷贝表信息文件
+		chown mysql:mysql /var/lib/mysql/库/表.*		#修改表所有者所属组
+		> alter table 库.表 import tablespace;		#导入表空间
+		rm -rf /var/lib/mysql/库/表.cfg				#删除表信息文件
+		rm -rf /var/lib/mysql/库/表.exp				#删除表信息文件
+
+	增量备份:
+		innobackupex --user root --password 密码 完全备目录 [--no-timestamp]	
+										#第一次先完全备份
+		innobackupex --user root --password 密码 --incremental 增量备目录1 --incremental-basedir=完全备目录 [--no-timestamp]
+		... ...							#第一次增量备份
+		innobackupex --user root --password 密码 --incremental 增量备目录n --incremental-basedir=增量备目录n-1 [--no-timestamp]
+										#第n次增量备份
+	增量备份恢复:
+		systemctl stop mysqld					#停止数据库服务
+		rm -rf /var/lib/mysql/*					#清空数据库文件目录
+		innobackupex --apply-log --redo-only 完全备目录	#准备恢复数据
+		innobackupex --apply-log --redo-only 完全备目录 --incremental-dir=增量备目录1
+		... ...							#合并数据1
+		innobackupex --apply-log --redo-only 完全备目录 --incremental-dir=增量备目录n
+										#合并数据n
+		rm -rf 增量备目录*						#合并完成删除增量备份目录
+		innobackupex --copy-back 完全备目录			#恢复数据
+		chown -R mysql:mysql /var/lib/mysql			#修改数据库目录所有者所属组
+		systemctl restart mysqld					#启动数据库服务
+
+

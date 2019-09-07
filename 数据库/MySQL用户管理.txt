@@ -1,0 +1,53 @@
+登录:
+	mysql-u用户名 -p"密码" --prompt "\u@\h \d>"
+		#--prompt 提示符选项 \u:当前用户 \h:当前主机 \d:当前库
+
+修改密码(操作系统root):
+	mysqladmin -hlocalhost -uroot -p旧密码 password "新密码"
+
+	> alter user user() identified by "新密码";
+
+恢复密码:
+	vim /etc/my.cnf
+		[mysqld]
+		skip-grant-tables
+	mysql			#进入数据库修改authentication_string字段数据
+		update mysql.user set authentication_string=password("新密码") where user = "root" and host = "localhost";
+		flush privileges;
+		exit
+	vim /etc/my.cnf
+		[mysqld]
+		#skip-grant-tables
+
+授权用户:
+	grant 权限列表 on 库.表 to 用户名@"客户端地址" identified by "密码" [with grant option];
+	#权限列表:
+		个别权限: select, insert, update, create table ... ... update(name,uid) ... ...
+		所有权限: all
+		无权限: usage
+	#客户端地址:
+		本机: localhost
+		某台主机: 192.168.1.1
+		某个网段: 192.168.1.%
+		所有主机: %
+	#with grant option 支持授权用户执行grant命令(可选项)
+
+	刷新授权表:
+		flush privileges;
+
+	#管理员查看授权用户权限
+		show grants for 用户名@"客户端地址";
+	#管理员重置授权用户密码
+		set password for 用户名@"客户端地址" = password("新密码");
+	#管理员撤销授权用户权限:
+		revoke 权限列表 on 库.表 from 用户名@"客户端地址";
+	#管理员删除授权用户
+		drop user 用户名@"客户端地址";
+
+授权用户登录、查询、修改密码:
+	mysql -h数据库服务器ip -u用户名 -p"密码"
+	select user();		#显示登录用户及登录地址
+	show grants;		#查询登录用户权限
+	set password = password("新密码");
+
+

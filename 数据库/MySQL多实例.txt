@@ -1,0 +1,36 @@
+多实例:
+	在一台服务器上运行多个数据库服务
+
+安装支持多实例版本MySQL:
+	安装依赖:
+		yum -y install libaio
+	创建用户:
+		useradd -s /sbin/nologin mysql
+	解压,移动:
+		tar -zxvf mysql-5.7.20-linux-glibc2.12-x86_64.tar.gz
+		mv mysql/mysql-5.7.20-linux-glibc2.12-x86_64 /usr/local/mysql
+	修改PATH路径:
+		PATH=/usr/local/mysql/bin:$PATH
+		vim /etc/bashrc
+			export PATH=/usr/local/mysql/bin:$PATH
+	修改配置文件:
+		vim /etc/my.cnf
+			[mysqld_multi]						#启动多实例
+			mysqld = /usr/local/mysql/bin/mysqld_safe		#指定进程文件路径
+			mysqladmin = /usr/local/mysql/bin/mysqladmin	#指定管理命令路径
+			user = root							#指定进程用户
+			[mysqld*]				#数据库实例编号*
+			port = *				#指定端口
+			datadir = /***			#指定数据库目录
+			socket = /***/mysqld*.sock	#指定socket文件
+			log-error = /***/mysqld*.err	#指定错误日志文件
+			pid-file = /***/mysqld*.pid	#指定pid号文件
+		mkdir /*				#创建数据库目录
+	启动服务:
+		mysqld_multi start 实例编号
+		ps -C mysqld			#查看进程pid
+	停止服务:
+		mysqld_multi --user=root --password=密码 stop 实例编号
+	本地管理员登录:
+		mysql -uroot -p密码 -S socket文件路径
+		> alter user root@"localhost" idenified by "新密码";
